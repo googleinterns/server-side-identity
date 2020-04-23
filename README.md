@@ -13,3 +13,5 @@ the server is valid and parse these tokens for usable data.
 1. node.js
 
 See specific library READMEs for detailed guides on implementation.
+
+This is not an officially supported Google product.
