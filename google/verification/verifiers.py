@@ -18,7 +18,7 @@ _GOOGLE_APIS_CERTS_URL = (
 
 def _fetch_certs(request, certs_url):
     """
-    Fetches certificates.
+    Fetches public certificates at the given url.
 
     Google-style cerificate endpoints return JSON in the format of
     ``{'key id': 'x509 certificate'}``.
@@ -36,8 +36,7 @@ def _fetch_certs(request, certs_url):
 
     if response.status != http_client.OK:
         #TODO: Implement custom exceptions
-        raise exceptions.TransportError(
-            'Could not fetch certificates at {}'.format(certs_url))
+        raise NotImplementedError("Need to implement custom exceptions")
 
     return json.loads(response.data.decode('utf-8'))
 
