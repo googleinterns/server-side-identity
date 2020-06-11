@@ -2,12 +2,13 @@ import json
 
 from six.moves import http_client
 
+import exceptions
 #JWT Library
-#Exceptions Library
 
 # The URL that provides public certificates for verifying ID tokens issued
 # by Google's OAuth 2.0 authorization server.
 _GOOGLE_OAUTH2_CERTS_URL = 'https://www.googleapis.com/oauth2/v1/certs'
+
 
 def _fetch_certs(request, certs_url):
     """
@@ -28,8 +29,9 @@ def _fetch_certs(request, certs_url):
     response = request(certs_url, method='GET')
 
     if response.status != http_client.OK:
-        #TODO: Implement custom exceptions
-        raise NotImplementedError("Need to implement custom exceptions")
+        raise exceptions.TransportError(
+            "Could not fetch certificates at {}".format(certs_url)
+        )
 
     return json.loads(response.data.decode('utf-8'))
 
