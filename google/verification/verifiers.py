@@ -98,23 +98,3 @@ class Oauth2Verifier(Verifier):
         """
         Verifier.__init__(id_token, request, client_ids,
                 certs_url=_GOOGLE_OAUTH2_CERTS_URL) #uses OAuth2 url
-        
-
-class FirebaseVerifier(Verifier):
-    """Verifies an ID Token issued by Firebase Authentication"""
-
-    def __init__(self, id_token, request, client_ids=None):
-        """
-        Args:
-            id_token (Union[str, bytes]): The encoded token.
-            request (TODO: (Make new Request class)google.auth.transport.Request): The object used to make
-                HTTP requests.
-            client_ids (list[str]): List of CLIENT_ID values of all audiences that use this backend. If None,
-                then the audience is not verified.
-            certs_url (str): The URL that specifies the certificates to use to
-                verify the token. This URL should return JSON in the format of
-                ``{'key id': 'x509 certificate'}``.
-        """
-        Verifier.__init__(id_token, request, client_ids,
-                certs_url=_GOOGLE_APIS_CERTS_URL) #uses Google APIs url
-
