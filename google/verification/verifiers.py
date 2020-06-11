@@ -9,13 +9,6 @@ from six.moves import http_client
 # by Google's OAuth 2.0 authorization server.
 _GOOGLE_OAUTH2_CERTS_URL = 'https://www.googleapis.com/oauth2/v1/certs'
 
-# The URL that provides public certificates for verifying ID tokens issued
-# by Firebase and the Google APIs infrastructure
-_GOOGLE_APIS_CERTS_URL = (
-    'https://www.googleapis.com/robot/v1/metadata/x509'
-    '/securetoken@system.gserviceaccount.com')
-
-
 def _fetch_certs(request, certs_url):
     """
     Fetches public certificates at the given url.
