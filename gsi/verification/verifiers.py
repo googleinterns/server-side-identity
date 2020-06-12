@@ -2,7 +2,7 @@ import json
 
 from six.moves import http_client
 
-import exceptions
+from bigtest.verification import exceptions
 #JWT Library
 
 # The URL that provides public certificates for verifying ID tokens issued
