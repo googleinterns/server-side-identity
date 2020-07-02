@@ -1,4 +1,4 @@
-"""Google Sign-in namespace package."""
+"""Google Sign-In namespace package."""
 
 try:
     import pkg_resources

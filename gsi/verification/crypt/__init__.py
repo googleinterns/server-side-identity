@@ -43,6 +43,7 @@ from gsi.verification.crypt import base
 from gsi.verification.crypt import rsa
 
 try:
+    from gsi.verification.crypt import es256
 except ImportError:  # pragma: NO COVER
     es256 = None
 
