@@ -90,7 +90,7 @@ class Verifier(object):
 class GoogleOauth2Verifier(Verifier):
     """Verifies an ID Token issued by Google's OAuth 2.0 authorization server"""
     
-    def __init__(self, id_token, client_ids=None, g_suite_hosted_domain=None):
+    def __init__(self, id_token, client_ids=None, g_suite_hosted_domain=None, request=request.Request()):
         """
         Args:
             id_token (Union[str, bytes]): The encoded token.
@@ -101,7 +101,7 @@ class GoogleOauth2Verifier(Verifier):
             g_suite_domain (str): The name of the G Suite domain owned by the client. Used to ensure that the user from the ID
                 Token is a member of the domain. If None, this field is not verified
         """
-        super().__init__(id_token, client_ids, request=request.Request(),
+        super().__init__(id_token, client_ids, request=request,
                 certs_url=_GOOGLE_OAUTH2_CERTS_URL) #uses OAuth2 url
         
         self.g_suite = g_suite_hosted_domain
@@ -123,8 +123,13 @@ class GoogleOauth2Verifier(Verifier):
                 "Wrong G Suite Domain. 'hd' (hosted domain) should be {}, it but was {}".format(
                     self.g_suite, decoded_token.get_g_suite_hosted_domain())
                 )
-        
-        if decoded_token.get_token_issuer() not in _GOOGLE_ISSUERS:
+                
+        if decoded_token.get_token_issuer() is None:
+            raise exceptions.GoogleVerificationError(
+                "The decoded token did not contain an 'iss' issuer field. This token is invalid."
+            )
+            
+        elif decoded_token.get_token_issuer() not in _GOOGLE_ISSUERS:
             raise exceptions.GoogleVerificationError(
                 "Wrong issuer. 'iss' (issuer) should be one of the following {}, it but was {}".format(
                     _GOOGLE_ISSUERS, decoded_token.get_token_issuer())
