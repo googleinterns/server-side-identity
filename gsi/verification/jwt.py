@@ -155,8 +155,8 @@ def decode(token, certs=None, verify=True, audience=None):
             in the token's header.
         verify (bool): Whether to perform signature and claim validation.
             Verification is done by default.
-        audience (str): The audience claim, 'aud', that this JWT should
-            contain. If None then the JWT's 'aud' parameter is not verified.
+        audience (list[str]): A collection of possible audience claims, 'aud', one of which 
+            this JWT should contain. If None then the JWT's 'aud' parameter is not verified.
     Returns:
         Mapping[str, str]: The deserialized JSON payload in the JWT.
     Raises:
