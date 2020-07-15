@@ -9,7 +9,7 @@ import time
 
 try:
     import requests
-except ImportError as caught_exc:  # pragma: NO COVER
+except ImportError as error:  # pragma: NO COVER
     import six
 
     six.raise_from(
@@ -17,7 +17,7 @@ except ImportError as caught_exc:  # pragma: NO COVER
             "The requests library is not installed, please install the "
             "requests package to use the requests transport."
         ),
-        caught_exc,
+        error,
     )
 import requests.adapters  # pylint: disable=ungrouped-imports
 import requests.exceptions  # pylint: disable=ungrouped-imports
@@ -104,7 +104,7 @@ class Request(transport.Request):
                 method, url, data=body, headers=headers, timeout=timeout, **kwargs
             )
             return _Response(response)
-        except requests.exceptions.RequestException as caught_exc:
-            new_exc = exceptions.TransportError(caught_exc)
-            six.raise_from(new_exc, caught_exc)
+        except requests.exceptions.RequestException as error:
+            new_exc = exceptions.TransportError(error)
+            six.raise_from(new_exc, error)
             
