@@ -105,6 +105,6 @@ class Request(transport.Request):
             )
             return _Response(response)
         except requests.exceptions.RequestException as error:
-            new_exc = exceptions.TransportError(error)
-            six.raise_from(new_exc, error)
+            new_error = exceptions.TransportError(error)
+            six.raise_from(new_error, error)
             
