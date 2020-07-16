@@ -24,7 +24,7 @@ if es256 is not None:  # pragma: NO COVER
 def encode(signer, payload, header=None, key_id=None):
     """Make a signed JWT.
     Args:
-        signer (google.auth.crypt.Signer): The signer used to sign the JWT.
+        signer (gsi.verification.crypt.Signer): The signer used to sign the JWT.
         payload (Mapping[str, str]): The JWT payload.
         header (Mapping[str, str]): Additional JWT header payload.
         key_id (str): The key id to add to the JWT header. If the
