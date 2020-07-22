@@ -173,11 +173,11 @@ class GoogleOauth2Verifier(Verifier):
         user_info = Verifier._verify_token_payload(self, id_token, self.client_ids, self.request_object, self.certs_url)
         decoded_token = GoogleDecodedToken(user_info)
         
-        if g_suite_hosted_domain is not None:
-            if g_suite_hosted_domain != decoded_token.get_g_suite_hosted_domain():
+        if self.g_suite_hosted_domain is not None:
+            if self.g_suite_hosted_domain != decoded_token.get_g_suite_hosted_domain():
                 raise exceptions.GoogleVerificationError(
                 "Wrong G Suite Domain. 'hd' (hosted domain) should be {}, it but was {}".format(
-                    g_suite_hosted_domain, decoded_token.get_g_suite_hosted_domain())
+                    self.g_suite_hosted_domain, decoded_token.get_g_suite_hosted_domain())
                 )
                 
         if decoded_token.get_token_issuer() is None:
