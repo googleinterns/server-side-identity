@@ -25,6 +25,9 @@ from tests.transport import compliance
 class TestRequestResponse(compliance.RequestResponseTests):
     def make_request(self):
         return gsi.transport.request.Request()
+    
+    def make_cached_request(self):
+        return gsi.transport.request.CacheRequest()
 
     def test_timeout(self):
         http = mock.create_autospec(requests.Session, instance=True)

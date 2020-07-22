@@ -26,6 +26,9 @@ from gsi.verification import exceptions
 # .invalid will never resolve, see https://tools.ietf.org/html/rfc2606
 NXDOMAIN = "test.invalid"
 
+_SLEEP_TIME = 3
+_HOUR = 3600
+
 
 class RequestResponseTests(object):
     @pytest.fixture(scope="module")
@@ -46,6 +49,12 @@ class RequestResponseTests(object):
             header_value = flask.request.headers.get("x-test-header", "value")
             headers = {"X-Test-Header": header_value}
             return "Basic Content", http_client.OK, headers
+        
+        @app.route("/cache")
+        def cached():
+            header_value = flask.request.headers.get("x-test-header", "value")
+            headers = {"X-Test-Header": header_value, "Time": time.time(), "Cache-Control": "public, max-age={}".format(_HOUR)}
+            return "Cache Content", http_client.OK, headers
 
         @app.route("/server_error")
         def server_error():
@@ -53,7 +62,7 @@ class RequestResponseTests(object):
 
         @app.route("/wait")
         def wait():
-            time.sleep(3)
+            time.sleep(_SLEEP_TIME)
             return "Waited"
 
         # pylint: enable=unused-variable
@@ -108,3 +117,15 @@ class RequestResponseTests(object):
         request = self.make_request()
         with pytest.raises(exceptions.TransportError):
             request(url="http://{}".format(NXDOMAIN), method="GET")
+        
+    def test_cached_request(self, server):
+        request = self.make_cached_request()
+        response = request(url=server.url + "/cache", method="GET")
+        request_time = response.headers.get("Time")
+        
+        time.sleep(_SLEEP_TIME)
+        
+        new_response = request(url=server.url + "/cache", method="GET")
+        new_time = new_response.headers.get("Time")
+        
+        assert request_time == new_time, "{} and {} are not equal".format(request_time, new_time)
