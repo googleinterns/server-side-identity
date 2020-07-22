@@ -102,79 +102,26 @@ def test_GoogleDecodedToken():
 @mock.patch("gsi.verification.verifiers._fetch_certs", autospec=True)
 def test__verify_token_payload(_fetch_certs, decode):
     verifier = verifiers.Verifier()
-    result = verifier._verify_token_payload(mock.sentinel.token, request_object=mock.sentinel.request)
+    
+    result = verifiers.Verifier._verify_token_payload(
+        verifier,
+        mock.sentinel.token, 
+        mock.sentinel.client_ids, 
+        mock.sentinel.request, 
+        mock.sentinel.certs_url)
 
     assert result == decode.return_value
+    
     _fetch_certs.assert_called_once_with(
-        mock.sentinel.request, verifiers._GOOGLE_OAUTH2_CERTS_URL
+        mock.sentinel.request, mock.sentinel.certs_url
     )
+    
     decode.assert_called_once_with(
-        mock.sentinel.token, certs=_fetch_certs.return_value, audience=None
-    )
-
-
-@mock.patch("gsi.verification.jwt.decode", autospec=True)
-@mock.patch("gsi.verification.verifiers._fetch_certs", autospec=True)
-def test__verify_token_payload_args(_fetch_certs, decode):
-    verifier = verifiers.Verifier()
-    
-    result = verifier._verify_token_payload(
-        mock.sentinel.token,
-        request_object=mock.sentinel.request,
-        client_ids=[mock.sentinel.audience],
-        certs_url=mock.sentinel.certs_url,
-    )
-
-    assert result == decode.return_value
-    _fetch_certs.assert_called_once_with(mock.sentinel.request, mock.sentinel.certs_url)
-    decode.assert_called_once_with(
-        mock.sentinel.token,
-        certs=_fetch_certs.return_value,
-        audience=[mock.sentinel.audience],
-    )
-    
-
-@mock.patch("gsi.verification.jwt.decode", autospec=True)
-@mock.patch("gsi.verification.verifiers._fetch_certs", autospec=True)
-def test__verify_token_payload_GoogleOauth2Verifier(_fetch_certs, decode):
-    verifier = verifiers.GoogleOauth2Verifier()
-    request_used = verifier.request
-    
-    result = verifier._verify_token_payload(
         mock.sentinel.token, 
-        client_ids=[mock.sentinel.audience],
-        request_object = request_used
+        certs=_fetch_certs.return_value, 
+        audience=mock.sentinel.client_ids
     )
 
-    assert result == decode.return_value
-    _fetch_certs.assert_called_once_with(request_used, verifiers._GOOGLE_OAUTH2_CERTS_URL)
-    decode.assert_called_once_with(
-        mock.sentinel.token,
-        audience=[mock.sentinel.audience],
-        certs=_fetch_certs.return_value,
-    )
-
-
-@mock.patch("gsi.verification.jwt.decode", autospec=True)
-@mock.patch("gsi.verification.verifiers._fetch_certs", autospec=True)
-def test__verify_token_payload_GoogleOauth2Verifier_cache(_fetch_certs, decode):
-    verifier = verifiers.GoogleOauth2Verifier(cache_certs=True)
-    request_used = verifier.request
-    
-    result = verifier._verify_token_payload(
-        mock.sentinel.token, 
-        client_ids=[mock.sentinel.audience],
-        request_object = request_used
-    )
-
-    assert result == decode.return_value
-    _fetch_certs.assert_called_once_with(request_used, verifiers._GOOGLE_OAUTH2_CERTS_URL)
-    decode.assert_called_once_with(
-        mock.sentinel.token,
-        audience=[mock.sentinel.audience],
-        certs=_fetch_certs.return_value,
-    )
-    
 
 @mock.patch("gsi.verification.verifiers.Verifier._verify_token_payload", autospec=True)
 def test_Verifier_verify_token(_verify_token_payload):
