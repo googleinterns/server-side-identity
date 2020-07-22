@@ -78,7 +78,8 @@ def test_GoogleDecodedToken():
                         "aud": "CLIENT_ID",
                         "iat": "issue time",
                         "exp": "expire time",
-                        "other key": "other value"}
+                        "other key": "other value"
+                       }
     
     decoded = verifiers.GoogleDecodedToken(decoded_id_token)
     
@@ -108,12 +109,14 @@ def test__verify_token_payload(_fetch_certs, decode):
         mock.sentinel.token, 
         mock.sentinel.client_ids, 
         mock.sentinel.request, 
-        mock.sentinel.certs_url)
+        mock.sentinel.certs_url
+    )
 
     assert result == decode.return_value
     
     _fetch_certs.assert_called_once_with(
-        mock.sentinel.request, mock.sentinel.certs_url
+        mock.sentinel.request, 
+        mock.sentinel.certs_url
     )
     
     decode.assert_called_once_with(
@@ -127,14 +130,13 @@ def test__verify_token_payload(_fetch_certs, decode):
 def test_Verifier_verify_token(_verify_token_payload):
     _verify_token_payload.return_value = {"key": "value"}
 
-    verifier = verifiers.Verifier()
-    
-    result = verifier.verify_token(
-        mock.sentinel.token,
-        request_object=mock.sentinel.request,
-        client_ids=[mock.sentinel.audience],
-        certs_url=mock.sentinel.certs_url,
+    verifier = verifiers.Verifier(
+        client_ids=[mock.sentinel.audience], 
+        request_object=mock.sentinel.request, 
+        certs_url=mock.sentinel.certs_url
     )
+    
+    result = verifier.verify_token(mock.sentinel.token)
     
     assert result["key"] == "value"
 
@@ -143,13 +145,17 @@ def test_Verifier_verify_token(_verify_token_payload):
 def test_GoogleOauth2Verifier_verify_token_valid_iss(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "accounts.google.com", "key": "value"}
 
-    verifier = verifiers.GoogleOauth2Verifier()
+    verifier = verifiers.GoogleOauth2Verifier(client_ids=[mock.sentinel.audience])
+    result = verifier.verify_token(mock.sentinel.token)
+    assert result["key"] == "value"
     
-    result = verifier.verify_token(
-        mock.sentinel.token, 
-        client_ids=[mock.sentinel.audience]
-    )
     
+@mock.patch("gsi.verification.verifiers.Verifier._verify_token_payload", autospec=True)
+def test_GoogleOauth2Verifier_verify_token_other_valid_iss(_verify_token_payload):
+    _verify_token_payload.return_value = {"iss": "https://accounts.google.com", "key": "value"}
+
+    verifier = verifiers.GoogleOauth2Verifier(client_ids=[mock.sentinel.audience])
+    result = verifier.verify_token(mock.sentinel.token)
     assert result["key"] == "value"
     
     
@@ -157,12 +163,12 @@ def test_GoogleOauth2Verifier_verify_token_valid_iss(_verify_token_payload):
 def test_GoogleOauth2Verifier_verify_token_valid_iss_cache(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "accounts.google.com", "key": "value"}
 
-    verifier = verifiers.GoogleOauth2Verifier(cache_certs=True)
-    
-    result = verifier.verify_token(
-        mock.sentinel.token, 
-        client_ids=[mock.sentinel.audience]
+    verifier = verifiers.GoogleOauth2Verifier(
+        client_ids=[mock.sentinel.audience], 
+        cache_certs=True
     )
+    
+    result = verifier.verify_token(mock.sentinel.token)
     
     assert result["key"] == "value"
     
@@ -171,40 +177,35 @@ def test_GoogleOauth2Verifier_verify_token_valid_iss_cache(_verify_token_payload
 def test_GoogleOauth2Verifier_verify_token_invalid_iss(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "invalid", "key": "value"}
 
-    verifier = verifiers.GoogleOauth2Verifier()
+    verifier = verifiers.GoogleOauth2Verifier(client_ids=[mock.sentinel.audience])
     
     with pytest.raises(exceptions.GoogleVerificationError):
-        result = verifier.verify_token(
-            mock.sentinel.token, 
-            client_ids=[mock.sentinel.audience]
-        )
+        result = verifier.verify_token(mock.sentinel.token)
         
 
 @mock.patch("gsi.verification.verifiers.Verifier._verify_token_payload", autospec=True)
 def test_GoogleOauth2Verifier_verify_token_invalid_iss_cache(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "invalid", "key": "value"}
 
-    verifier = verifiers.GoogleOauth2Verifier(cache_certs=True)
+    verifier = verifiers.GoogleOauth2Verifier(
+        client_ids=[mock.sentinel.audience], 
+        cache_certs=True
+    )
     
     with pytest.raises(exceptions.GoogleVerificationError):
-        result = verifier.verify_token(
-            mock.sentinel.token, 
-            client_ids=[mock.sentinel.audience]
-        )  
+        result = verifier.verify_token(mock.sentinel.token)  
         
 
 @mock.patch("gsi.verification.verifiers.Verifier._verify_token_payload", autospec=True)
 def test_GoogleOauth2Verifier_verify_token_valid_hd(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "accounts.google.com", "key": "value", "hd": "domain"}
 
-    verifier = verifiers.GoogleOauth2Verifier()
-    
-    result = verifier.verify_token(
-        mock.sentinel.token, 
+    verifier = verifiers.GoogleOauth2Verifier(
         client_ids=[mock.sentinel.audience],
         g_suite_hosted_domain="domain"
     )
     
+    result = verifier.verify_token(mock.sentinel.token)    
     assert result["key"] == "value"
     
     
@@ -212,14 +213,13 @@ def test_GoogleOauth2Verifier_verify_token_valid_hd(_verify_token_payload):
 def test_GoogleOauth2Verifier_verify_token_valid_hd_cache(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "accounts.google.com", "key": "value", "hd": "domain"}
 
-    verifier = verifiers.GoogleOauth2Verifier(cache_certs=True)
-    
-    result = verifier.verify_token(
-        mock.sentinel.token, 
+    verifier = verifiers.GoogleOauth2Verifier(
         client_ids=[mock.sentinel.audience],
-        g_suite_hosted_domain="domain"
+        g_suite_hosted_domain="domain",
+        cache_certs=True
     )
     
+    result = verifier.verify_token(mock.sentinel.token)
     assert result["key"] == "value"   
     
     
@@ -227,27 +227,26 @@ def test_GoogleOauth2Verifier_verify_token_valid_hd_cache(_verify_token_payload)
 def test_GoogleOauth2Verifier_verify_token_invalid_hd(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "accounts.google.com", "key": "value", "hd": "invalid"}
 
-    verifier = verifiers.GoogleOauth2Verifier()
+    verifier = verifiers.GoogleOauth2Verifier(
+        client_ids=[mock.sentinel.audience],
+        g_suite_hosted_domain="domain"
+    )
     
     with pytest.raises(exceptions.GoogleVerificationError):
-        result = verifier.verify_token(
-            mock.sentinel.token, 
-            client_ids=[mock.sentinel.audience],
-            g_suite_hosted_domain="domain"
-        )
-        
+        result = verifier.verify_token(mock.sentinel.token)
+            
         
 @mock.patch("gsi.verification.verifiers.Verifier._verify_token_payload", autospec=True)
 def test_GoogleOauth2Verifier_verify_token_invalid_hd_cache(_verify_token_payload):
     _verify_token_payload.return_value = {"iss": "accounts.google.com", "key": "value", "hd": "invalid"}
 
-    verifier = verifiers.GoogleOauth2Verifier(cache_certs=True)
+    verifier = verifiers.GoogleOauth2Verifier(
+        client_ids=[mock.sentinel.audience],
+        g_suite_hosted_domain="domain",
+        cache_certs=True
+    )
     
     with pytest.raises(exceptions.GoogleVerificationError):
-        result = verifier.verify_token(
-            mock.sentinel.token, 
-            client_ids=[mock.sentinel.audience],
-            g_suite_hosted_domain="domain"
-        )
+        result = verifier.verify_token(mock.sentinel.token)
 
         
