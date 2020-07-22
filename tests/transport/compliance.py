@@ -27,7 +27,7 @@ from gsi.verification import exceptions
 NXDOMAIN = "test.invalid"
 
 _SLEEP_TIME = 3
-_HOUR = 3600
+_MAX_AGE = 5
 
 
 class RequestResponseTests(object):
@@ -53,7 +53,7 @@ class RequestResponseTests(object):
         @app.route("/cache")
         def cached():
             header_value = flask.request.headers.get("x-test-header", "value")
-            headers = {"X-Test-Header": header_value, "Time": time.time(), "Cache-Control": "public, max-age={}".format(_HOUR)}
+            headers = {"X-Test-Header": header_value, "Time": time.time(), "Cache-Control": "public, max-age={}".format(_MAX_AGE)}
             return "Cache Content", http_client.OK, headers
 
         @app.route("/server_error")
@@ -129,3 +129,15 @@ class RequestResponseTests(object):
         new_time = new_response.headers.get("Time")
         
         assert request_time == new_time, "{} and {} are not equal".format(request_time, new_time)
+    
+    def test_expired_cached_request(self, server):
+        request = self.make_cached_request()
+        response = request(url=server.url + "/cache", method="GET")
+        request_time = response.headers.get("Time")
+        
+        time.sleep(_MAX_AGE)
+        
+        new_response = request(url=server.url + "/cache", method="GET")
+        new_time = new_response.headers.get("Time")
+        
+        assert request_time != new_time, "{} and {} are equal when they should be different".format(request_time, new_time)
