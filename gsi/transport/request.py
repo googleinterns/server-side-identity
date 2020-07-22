@@ -17,6 +17,7 @@
 
 from __future__ import absolute_import
 
+import cachecontrol
 import functools
 import logging
 import numbers
@@ -122,4 +123,11 @@ class Request(transport.Request):
         except requests.exceptions.RequestException as error:
             new_error = exceptions.TransportError(error)
             six.raise_from(new_error, error)
+            
+
+class CacheRequest(Request):
+    def __init__(self):
+        session = requests.session()
+        cached_session = cachecontrol.CacheControl(session)
+        super().__init__(session=cached_session)
             

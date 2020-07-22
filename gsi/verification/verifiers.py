@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import json
+import requests
 
 from six.moves import http_client
 
@@ -26,7 +27,6 @@ from gsi.verification import jwt
 _GOOGLE_OAUTH2_CERTS_URL = 'https://www.googleapis.com/oauth2/v1/certs'
 
 _GOOGLE_ISSUERS = ["accounts.google.com", "https://accounts.google.com"]
-
 
 def _fetch_certs(request, certs_url):
     """
@@ -58,85 +58,106 @@ def _fetch_certs(request, certs_url):
 class Verifier(object):
     """Verifies an ID token and returns the decoded token."""
 
-    def __init__(self, id_token, client_ids=None, request=request.Request(),
+    def __init__(self):
+        """
+        Initializes the verifier
+        """
+        pass
+    
+    def _verify_token_payload(self, id_token, client_ids=None, request_object=request.Request(),
             certs_url=_GOOGLE_OAUTH2_CERTS_URL):
         """
+        Verifies the stored ID Token and returns it's payload in a hashmap form.
+        
         Args:
             id_token (Union[str, bytes]): The encoded token.
             
             client_ids (list[str]): List of CLIENT_ID values of all audiences that use this backend. If None,
                 then the audience is not verified.
             
-            request (gsi.transport.Request): The object used to make
+            request_object (gsi.transport.Request): The object used to make
                 HTTP requests.
                 
             certs_url (str): The URL that specifies the certificates to use to
                 verify the token. This URL should return JSON in the format of
                 ``{'key id': 'x509 certificate'}``.
-        """
-        self.id_token = id_token
-        self.request = request
-        self.clients = client_ids
-        self.certs_url = certs_url
-    
-    def _verify_token_payload(self):
-        """
-        Verifies the stored ID Token and returns it's payload in a hashmap form.
 
         Returns:
             Mapping[str, Any]: The decoded token payload.
         """
-        certs = _fetch_certs(self.request, self.certs_url)
-        return jwt.decode(self.id_token, certs=certs, audience=self.clients)
+        certs = _fetch_certs(request_object, certs_url)
+        return jwt.decode(id_token, certs=certs, audience=client_ids)
         
-    def verify_token(self):
+    def verify_token(self, id_token, client_ids=None, request_object=request.Request(),
+            certs_url=_GOOGLE_OAUTH2_CERTS_URL):
         """
         Verifies the stored ID Token and returns a DecodedToken object.
+        
+        Args:
+            id_token (Union[str, bytes]): The encoded token.
+            
+            client_ids (list[str]): List of CLIENT_ID values of all audiences that use this backend. If None,
+                then the audience is not verified.
+            
+            request_object (gsi.transport.Request): The object used to make
+                HTTP requests.
+                
+            certs_url (str): The URL that specifies the certificates to use to
+                verify the token. This URL should return JSON in the format of
+                ``{'key id': 'x509 certificate'}``.
 
         Returns:
-            DecodedToken: The decoded token.
+            DecodedToken: The decoded token object.
         """        
-        user_info = self._verify_token_payload()
+        user_info = self._verify_token_payload(id_token, client_ids, request_object, certs_url)
         
         decoded = DecodedToken(user_info)
         return decoded
         
 
 class GoogleOauth2Verifier(Verifier):
-    """Verifies an ID Token issued by Google's OAuth 2.0 authorization server"""
+    """Verifies an ID Token issued by Google's OAuth 2.0 authorization server.
+       Uses certificates fetched from https://www.googleapis.com/oauth2/v1/certs and is
+       capable of caching certificates fetched during verification
+       """
     
-    def __init__(self, id_token, client_ids=None, g_suite_hosted_domain=None, request=request.Request()):
+    def __init__(self, cache_certs=False):
         """
         Args:
-            id_token (Union[str, bytes]): The encoded token.
-            
-            client_ids (list[str]): List of CLIENT_ID values of all audiences that use this backend. If None,
-                then the audience is not verified.
-            
-            g_suite_domain (str): The name of the G Suite domain owned by the client. Used to ensure that the user from the ID
-                Token is a member of the domain. If None, this field is not verified
+            cache_certs (bool): If True, this verifier will cache certificates fetched during token verification if possible,
+                otherwise the certification will be fetched every time a token is verified
         """
-        super().__init__(id_token, client_ids, request=request,
-                certs_url=_GOOGLE_OAUTH2_CERTS_URL) #uses OAuth2 url
+        Verifier.__init__(self)
         
-        self.g_suite = g_suite_hosted_domain
-
-        
-    def verify_token(self):
+        if cache_certs:
+            self.request = request.CacheRequest()
+            
+        else:
+            self.request = request.Request()
+            
+    def verify_token(self, id_token, client_ids=None, g_suite_hosted_domain=None):
         """
         Verifies the stored Google issued ID Token and returns a GoogleDecodedToken object.
+        
+        id_token (Union[str, bytes]): The encoded token.
+
+        client_ids (list[str]): List of CLIENT_ID values of all audiences that use this backend. If None,
+            then the audience is not verified.
+
+        g_suite_domain (str): The name of the G Suite domain owned by the client. Used to ensure that the user from the ID
+            Token is a member of the domain (optional). If None, this field is not verified
 
         Returns:
-            GoogleDecodedToken: The decoded Google issued token.
+            GoogleDecodedToken: The decoded Google issued token object.
         """
-        user_info = super()._verify_token_payload()
+        user_info = Verifier._verify_token_payload(self, id_token, client_ids, self.request, _GOOGLE_OAUTH2_CERTS_URL)
         decoded_token = GoogleDecodedToken(user_info)
         
-        if self.g_suite is not None:
-            if self.g_suite != decoded_token.get_g_suite_hosted_domain():
+        if g_suite_hosted_domain is not None:
+            if g_suite_hosted_domain != decoded_token.get_g_suite_hosted_domain():
                 raise exceptions.GoogleVerificationError(
                 "Wrong G Suite Domain. 'hd' (hosted domain) should be {}, it but was {}".format(
-                    self.g_suite, decoded_token.get_g_suite_hosted_domain())
+                    g_suite_hosted_domain, decoded_token.get_g_suite_hosted_domain())
                 )
                 
         if decoded_token.get_token_issuer() is None:
@@ -193,7 +214,7 @@ class GoogleDecodedToken(DecodedToken):
         Args:
             payload (Mapping[str, Any]): The decoded token payload.
         """
-        super().__init__(payload)
+        DecodedToken.__init__(self, payload)
     
     def get_token_issuer(self):
         """
