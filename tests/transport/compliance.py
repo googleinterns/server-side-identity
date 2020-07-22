@@ -26,8 +26,8 @@ from gsi.verification import exceptions
 # .invalid will never resolve, see https://tools.ietf.org/html/rfc2606
 NXDOMAIN = "test.invalid"
 
-_SLEEP_TIME = 3
-_MAX_AGE = 5
+_SLEEP_TIME = 5
+_MAX_AGE = 10
 
 
 class RequestResponseTests(object):
@@ -135,7 +135,7 @@ class RequestResponseTests(object):
         response = request(url=server.url + "/cache", method="GET")
         request_time = response.headers.get("Time")
         
-        time.sleep(_MAX_AGE)
+        time.sleep(_MAX_AGE + _SLEEP_TIME)
         
         new_response = request(url=server.url + "/cache", method="GET")
         new_time = new_response.headers.get("Time")
