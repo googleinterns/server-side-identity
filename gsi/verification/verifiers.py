@@ -220,6 +220,13 @@ class DecodedToken(object):
             return value
         except KeyError:
             return None
+    
+    def to_json(self):
+        """
+        Returns:
+            Any: The JSON serialized representation of this token (required by some web frameworks)
+        """
+        return self.token
 
 
 class GoogleDecodedToken(DecodedToken):
