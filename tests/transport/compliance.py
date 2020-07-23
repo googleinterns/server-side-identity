@@ -13,11 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import time
-
+import datetime
 import flask
 import pytest
+import time
+
+from freezegun import freeze_time
 from pytest_localserver.http import WSGIServer
 from six.moves import http_client
 
@@ -28,6 +29,14 @@ NXDOMAIN = "test.invalid"
 
 _SLEEP_TIME = 5
 _MAX_AGE = 10
+
+def sleepless(seconds, frozen_time):
+    """
+    Function for simulating the time.sleep() method using a freezegun frozen datetime
+    Instead of really sleeping, just move frozen time forward
+    """
+    delta = datetime.timedelta(seconds=seconds)
+    frozen_time.tick(delta)
 
 
 class RequestResponseTests(object):
@@ -117,27 +126,31 @@ class RequestResponseTests(object):
         request = self.make_request()
         with pytest.raises(exceptions.TransportError):
             request(url="http://{}".format(NXDOMAIN), method="GET")
-        
-    def test_cached_request(self, server):
-        request = self.make_cached_request()
-        response = request(url=server.url + "/cache", method="GET")
-        request_time = response.headers.get("Time")
-        
-        time.sleep(_SLEEP_TIME)
-        
-        new_response = request(url=server.url + "/cache", method="GET")
-        new_time = new_response.headers.get("Time")
-        
-        assert request_time == new_time, "{} and {} are not equal".format(request_time, new_time)
+
+    def test_cached_request(self, server, monkeypatch):
+        with freeze_time("2000-01-01 00:00:00") as frozen_datetime:
+            request = self.make_cached_request()
+            response = request(url=server.url + "/cache", method="GET")
+            request_time = response.headers.get("Time")
+            
+            monkeypatch.setattr(time, 'sleep', sleepless)
+            time.sleep(_SLEEP_TIME, frozen_datetime)
+
+            new_response = request(url=server.url + "/cache", method="GET")
+            new_time = new_response.headers.get("Time")
+
+            assert request_time == new_time, "{} and {} are not equal".format(request_time, new_time)
     
-    def test_expired_cached_request(self, server):
-        request = self.make_cached_request()
-        response = request(url=server.url + "/cache", method="GET")
-        request_time = response.headers.get("Time")
-        
-        time.sleep(_MAX_AGE + _SLEEP_TIME)
-        
-        new_response = request(url=server.url + "/cache", method="GET")
-        new_time = new_response.headers.get("Time")
-        
-        assert request_time != new_time, "{} and {} are equal when they should be different".format(request_time, new_time)
+    def test_expired_cached_request(self, server, monkeypatch):
+        with freeze_time("2000-01-01 00:00:00") as frozen_datetime:
+            request = self.make_cached_request()
+            response = request(url=server.url + "/cache", method="GET")
+            request_time = response.headers.get("Time")
+            
+            monkeypatch.setattr(time, 'sleep', sleepless)
+            time.sleep(_MAX_AGE + _SLEEP_TIME, frozen_datetime)
+
+            new_response = request(url=server.url + "/cache", method="GET")
+            new_time = new_response.headers.get("Time")
+
+            assert request_time != new_time, "{} and {} are equal when they should be different".format(request_time, new_time)
