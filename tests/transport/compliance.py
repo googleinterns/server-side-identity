@@ -30,10 +30,15 @@ NXDOMAIN = "test.invalid"
 _SLEEP_TIME = 5
 _MAX_AGE = 10
 
-def sleepless(seconds, frozen_time):
+def increment_frozen_time(seconds, frozen_time):
     """
     Function for simulating the time.sleep() method using a freezegun frozen datetime
     Instead of really sleeping, just move frozen time forward
+    
+    Args:
+        seconds (int): the number of seconds we wish to move the frozen time forward by
+        
+        frozen_time (freezegun._freeze_time): the time that our test is frozen at
     """
     delta = datetime.timedelta(seconds=seconds)
     frozen_time.tick(delta)
@@ -127,28 +132,26 @@ class RequestResponseTests(object):
         with pytest.raises(exceptions.TransportError):
             request(url="http://{}".format(NXDOMAIN), method="GET")
 
-    def test_cached_request(self, server, monkeypatch):
+    def test_cached_request(self, server):
         with freeze_time("2000-01-01 00:00:00") as frozen_datetime:
             request = self.make_cached_request()
             response = request(url=server.url + "/cache", method="GET")
             request_time = response.headers.get("Time")
             
-            monkeypatch.setattr(time, 'sleep', sleepless)
-            time.sleep(_SLEEP_TIME, frozen_datetime)
+            increment_frozen_time(_SLEEP_TIME, frozen_datetime)
 
             new_response = request(url=server.url + "/cache", method="GET")
             new_time = new_response.headers.get("Time")
 
             assert request_time == new_time, "{} and {} are not equal".format(request_time, new_time)
     
-    def test_expired_cached_request(self, server, monkeypatch):
+    def test_expired_cached_request(self, server):
         with freeze_time("2000-01-01 00:00:00") as frozen_datetime:
             request = self.make_cached_request()
             response = request(url=server.url + "/cache", method="GET")
             request_time = response.headers.get("Time")
             
-            monkeypatch.setattr(time, 'sleep', sleepless)
-            time.sleep(_MAX_AGE + _SLEEP_TIME, frozen_datetime)
+            increment_frozen_time(_MAX_AGE + _SLEEP_TIME, frozen_datetime)
 
             new_response = request(url=server.url + "/cache", method="GET")
             new_time = new_response.headers.get("Time")
