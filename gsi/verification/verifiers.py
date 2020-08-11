@@ -133,7 +133,7 @@ class GoogleOauth2Verifier(Verifier):
        Uses gsi.transport.Request or CahceRequest objects for fetching certificates (dictated by cache_certs arg)
        """
     
-    def __init__(self, client_ids=None, g_suite_hosted_domain=None, cache_certs=False):
+    def __init__(self, client_ids=None, g_suite_hosted_domain=None, cache_certs=True):
         """
         Initializes the GoogleOauth2Verifier object
         
