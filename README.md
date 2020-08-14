@@ -8,7 +8,7 @@ To download this library to your local machine, execute the following command in
 git clone https://github.com/sotremba/server-side-identity.git
 ~~~
 
-To download the necessary dependencies for this library, cd into the server side identity directory and execute the following command:
+To download the necessary dependencies for this library, cd into the server-side identity directory and execute the following command:
 ~~~
 pip install -r requirements.txt
 ~~~
@@ -36,8 +36,8 @@ except (ValueError, exceptions.GoogleVerificationError):
 ~~~
 
 
-### Languages Planned to be Supported
-We plan on expanding the collection of libraries to include more languages in the future
+### Supported Languages
+We plan on expanding the collection of libraries to include more server-side languages in the future.
 
 ### Disclaimer
 This is not an officially supported Google product.
