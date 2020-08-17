@@ -126,6 +126,10 @@ class Request(transport.Request):
             
 
 class CacheRequest(Request):
+    """Requests request adapter.
+    This class is used internally for making requests using various transports
+    in a consistent way while caching responses when possible.
+    """
     def __init__(self):
         session = requests.session()
         cached_session = cachecontrol.CacheControl(session)

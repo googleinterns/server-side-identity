@@ -44,6 +44,9 @@ def _fetch_certs(request, certs_url):
     Returns:
         Mapping[str, str]: A mapping of public key ID to x.509 certificate
             data.
+            
+    Raises: 
+        TransportError: Raises this error if the certificate fetch fails
     """
     response = request(certs_url, method='GET')
 
@@ -107,16 +110,6 @@ class Verifier(object):
         
         Args:
             id_token (Union[str, bytes]): The encoded token.
-            
-            client_ids (list[str]): List of CLIENT_ID values of all audiences that use this backend. If None,
-                then the audience is not verified.
-            
-            request_object (gsi.transport.Request): The object used to make
-                HTTP GET requests for certificates.
-                
-            certs_url (str): The URL that specifies the certificates to use to
-                verify id_tokens passed to this Verifier. This URL should return JSON in the format of
-                ``{'key id': 'x509 certificate'}``.
 
         Returns:
             DecodedToken: The decoded token object.
@@ -169,6 +162,10 @@ class GoogleOauth2Verifier(Verifier):
 
         Returns:
             GoogleDecodedToken: The decoded Google issued token object.
+            
+        Raises:
+            GoogleVerificationError: Raises this error if the issuer or hosted domain fields 
+                in the token are inconsistent
         """
         user_info = Verifier._verify_token_payload(self, id_token, self.client_ids, self.request_object, self.certs_url)
         decoded_token = GoogleDecodedToken(user_info)
@@ -223,6 +220,8 @@ class DecodedToken(object):
     
     def to_json(self):
         """
+        Returns a JSON serializable representation of the token
+        
         Returns:
             Any: The JSON serialized representation of this token (required by some web frameworks)
         """
